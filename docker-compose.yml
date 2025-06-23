@@ -1,0 +1,11 @@
+services:
+  mongo:
+    image: mongo
+    container_name: mazy-video-tools-db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: mazy-video-tools
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data/db:/data/db

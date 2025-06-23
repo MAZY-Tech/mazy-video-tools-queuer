@@ -1,0 +1,10 @@
+{
+  "Records": [
+    {
+      "s3": {
+        "bucket": { "name": "bucket-name" },
+        "object": { "key": "object-key" }
+      }
+    }
+  ]
+}

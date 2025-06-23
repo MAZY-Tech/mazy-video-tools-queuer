@@ -1,0 +1,145 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SAM template for mazy-video-tools-video-queuer
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: python3.12
+    MemorySize: 256
+    EphemeralStorage:
+      Size: 512
+
+Parameters:
+  S3Bucket:
+    Type: String
+    Description: Name of the S3 bucket that triggers ingestion
+
+  DatabaseHost:
+    Type: String
+    Default: localhost
+    Description: MongoDB/DocumentDB host
+  DatabasePort:
+    Type: Number
+    Default: 27017
+    Description: MongoDB/DocumentDB port
+  DatabaseUser:
+    Type: String
+    Default: root
+    Description: MongoDB/DocumentDB username
+  DatabasePassword:
+    Type: String
+    Default: password
+    Description: MongoDB/DocumentDB password
+  DatabaseName:
+    Type: String
+    Default: testdb
+    Description: MongoDB/DocumentDB database name
+  VpcSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: VPC subnet IDs for Lambda functions
+  VpcSecurityGroups:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+    Description: VPC security group IDs for Lambda functions
+
+Resources:
+  # SQS
+  DeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: video-tools-dlq
+      MessageRetentionPeriod: 1209600 # 14 days
+
+  IncomingQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: video-tools-incoming-queue
+      VisibilityTimeout: 60
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+        maxReceiveCount: 5
+
+  ProgressQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: video-tools-progress-updates-queue
+      VisibilityTimeout: 60
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+        maxReceiveCount: 5
+
+  # Lambdas
+  VideoS3HandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: mazy-video-tools-video-s3-handler
+      Description: Receive S3 video-upload events and enqueue to IncomingQueue
+      CodeUri: functions/video-s3-handler/
+      Handler: lambda_function.lambda_handler
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/LabRole
+      VpcConfig:
+        SubnetIds: !Ref VpcSubnets
+        SecurityGroupIds: !Ref VpcSecurityGroups
+      Environment:
+        Variables:
+          S3_BUCKET: !Ref S3Bucket
+          INCOMING_QUEUE_URL: !Ref IncomingQueue
+          DATABASE_HOST: !Ref DatabaseHost
+          DATABASE_PORT: !Ref DatabasePort
+          DATABASE_USER: !Ref DatabaseUser
+          DATABASE_PASSWORD: !Ref DatabasePassword
+          DATABASE_NAME: !Ref DatabaseName
+      Policies:
+      - AWSLambdaBasicExecutionRole
+      - Statement:
+          Effect: Allow
+          Action:
+          - s3:GetObject
+          Resource: !Sub arn:aws:s3:::${S3Bucket}/*
+      - Statement:
+          Effect: Allow
+          Action:
+          - sqs:SendMessage
+          Resource: !GetAtt IncomingQueue.Arn
+
+  VideoS3HandlerPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt VideoS3HandlerFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub arn:aws:s3:::${S3Bucket}
+
+  VideoProgressUpdatesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: mazy-video-tools-video-progress-updates
+      Description: Process video progress, success and failure updates from ProgressQueue
+      CodeUri: functions/video-progress-updates/
+      Handler: lambda_function.lambda_handler
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/LabRole
+      VpcConfig:
+        SubnetIds: !Ref VpcSubnets
+        SecurityGroupIds: !Ref VpcSecurityGroups
+      Environment:
+        Variables:
+          DATABASE_HOST: !Ref DatabaseHost
+          DATABASE_PORT: !Ref DatabasePort
+          DATABASE_USER: !Ref DatabaseUser
+          DATABASE_PASSWORD: !Ref DatabasePassword
+          DATABASE_NAME: !Ref DatabaseName
+      Policies:
+      - AWSLambdaBasicExecutionRole
+      - Statement:
+          Effect: Allow
+          Action:
+          - sqs:ReceiveMessage
+          - sqs:DeleteMessage
+          - sqs:GetQueueAttributes
+          Resource: !GetAtt ProgressQueue.Arn
+      Events:
+        ProgressQueueEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt ProgressQueue.Arn
+            BatchSize: 5
