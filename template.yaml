@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: SAM template for mazy-video-tools-video-queuer
+Description: AWS SAM template for MAZY Video Tools Queuer Lambda functions.
 
 Globals:
   Function:
@@ -79,7 +79,7 @@ Resources:
       Environment:
         Variables:
           S3_BUCKET: !Ref S3Bucket
-          INCOMING_QUEUE_URL: !Ref InboundQueueUrl
+          INBOUND_QUEUE_URL: !Ref InboundQueueUrl
           DATABASE_HOST: !Ref DatabaseHost
           DATABASE_USER: !Ref DatabaseUser
           DATABASE_PASSWORD: !Ref DatabasePassword

@@ -4,7 +4,7 @@ import urllib.parse
 
 from aws_clients import s3_client, sqs_client
 from database import collection
-from config import logger, INCOMING_QUEUE_URL
+from config import logger, INBOUND_QUEUE_URL
 
 def lambda_handler(event, context):
     start_remaining = context.get_remaining_time_in_millis()
@@ -68,7 +68,7 @@ def lambda_handler(event, context):
                     logger.info(f'Sending to SQS - remaining time: {before_sqs} ms')
                     clean_item = {k: v for k, v in item.items() if k != '_id'}
                     sqs_client.send_message(
-                        QueueUrl=INCOMING_QUEUE_URL,
+                        QueueUrl=INBOUND_QUEUE_URL,
                         MessageBody=json.dumps(clean_item)
                     )
                     after_sqs = context.get_remaining_time_in_millis()
