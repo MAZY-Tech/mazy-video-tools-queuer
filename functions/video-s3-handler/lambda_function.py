@@ -5,6 +5,7 @@ from aws_clients import s3_client, sqs_client
 from database import collection
 from config import logger, INBOUND_QUEUE_URL
 
+
 def extract_s3_info(record):
     s3_info = record['s3']
     bucket = s3_info['bucket']['name']
