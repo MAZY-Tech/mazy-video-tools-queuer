@@ -1,6 +1,6 @@
 ACCOUNT_ID := $(shell aws sts get-caller-identity --query Account --output text)
 AWS_REGION ?= $(shell aws configure get region)
-SAM_STACK_NAME ?= mazy-video-tools-video-queuer
+SAM_STACK_NAME ?= mazy-video-tools-queuer
 
 .PHONY: build start invoke logs clean
 

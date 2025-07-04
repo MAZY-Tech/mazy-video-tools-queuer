@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: SAM template for mazy-video-tools-video-queuer
+Description: AWS SAM template for MAZY Video Tools Queuer Lambda functions.
 
 Globals:
   Function:
@@ -47,6 +47,13 @@ Parameters:
     Type: String
     Description: Inbound Queue ARN
 
+  NotificationQueueUrl:
+    Type: String
+    Description: Notification Queue URL
+  NotificationQueueArn:
+    Type: String
+    Description: Notification Queue ARN
+
 Resources:
   # SQS
   ProgressUpdatesDeadLetterQueue:
@@ -79,11 +86,11 @@ Resources:
       Environment:
         Variables:
           S3_BUCKET: !Ref S3Bucket
-          INCOMING_QUEUE_URL: !Ref InboundQueueUrl
           DATABASE_HOST: !Ref DatabaseHost
           DATABASE_USER: !Ref DatabaseUser
           DATABASE_PASSWORD: !Ref DatabasePassword
           DATABASE_NAME: !Ref DatabaseName
+          INBOUND_QUEUE_URL: !Ref InboundQueueUrl
       Policies:
       - AWSLambdaBasicExecutionRole
       - Statement:
@@ -122,6 +129,7 @@ Resources:
           DATABASE_USER: !Ref DatabaseUser
           DATABASE_PASSWORD: !Ref DatabasePassword
           DATABASE_NAME: !Ref DatabaseName
+          NOTIFICATION_QUEUE_URL: !Ref NotificationQueueUrl
       Policies:
       - AWSLambdaBasicExecutionRole
       - Statement:
@@ -131,6 +139,11 @@ Resources:
           - sqs:DeleteMessage
           - sqs:GetQueueAttributes
           Resource: !GetAtt ProgressUpdatesQueue.Arn
+      - Statement:
+          Effect: Allow
+          Action:
+          - sqs:SendMessage
+          Resource: !Ref NotificationQueueArn
       Events:
         ProgressUpdatesQueueEvent:
           Type: SQS
