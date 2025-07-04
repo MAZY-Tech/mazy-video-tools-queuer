@@ -3,6 +3,7 @@ from datetime import datetime
 from aws_clients import sqs_client
 from database import collection
 from config import logger, NOTIFICATION_QUEUE_URL
+from pymongo import ReturnDocument
 
 
 def parse_record(record):
@@ -29,27 +30,26 @@ def extract_update_fields(msg):
 
 def update_database(video_id, update_fields):
     update_fields['last_update'] = datetime.now().isoformat()
-    result = collection.update_one(
+    result = collection.find_one_and_update(
         {'video_id': video_id},
-        {'$set': update_fields}
+        {'$set': update_fields},
+        return_document=ReturnDocument.AFTER
     )
     logger.info(
-        f"Updated fields {update_fields} for video_id={video_id}, "
-        f"modified_count={result.modified_count}"
+        f"Updated fields {update_fields} for video_id={video_id}"
     )
-    return result.modified_count
+    return result
 
 def is_terminal_status(status):
     return status in ('FAILED', 'COMPLETED')
 
-def build_notification_payload(msg):
+def build_notification_payload(video):
     return {
-        'video_id':        msg.get('video_id'),
-        'bucket':          msg.get('zip', {}).get('bucket'),
-        'key':             msg.get('zip', {}).get('key'),
-        'cognito_user_id': msg.get('cognito_user_id'),
-        'status':          msg.get('status'),
-        'message':         msg.get('message', ''),
+        'video_id':        video.get('video_id'),
+        'file_name':       video.get('file_name'),
+        'cognito_user_id': video.get('cognito_user_id'),
+        'status':          video.get('status'),
+        'message':         video.get('message', ''),
         'timestamp':       datetime.now().isoformat()
     }
 
@@ -76,12 +76,13 @@ def lambda_handler(event, context):
         if not update_fields:
             continue
 
-        modified = update_database(video_id, update_fields)
-        total_updated += modified
+        result = update_database(video_id, update_fields)
+        if result:
+            total_updated += 1
 
         status = msg.get('status')
-        if modified and is_terminal_status(status):
-            notification = build_notification_payload(msg)
+        if result and is_terminal_status(status):
+            notification = build_notification_payload(result)
             send_notification(notification)
 
     logger.info(f"Processed {total_updated} update(s)")
