@@ -4,6 +4,9 @@ from aws_clients import sqs_client
 from database import collection
 from config import logger, NOTIFICATION_QUEUE_URL
 from pymongo import ReturnDocument
+from sentry import initialize_sentry
+
+initialize_sentry()
 
 
 def parse_record(record):
