@@ -4,6 +4,9 @@ import urllib.parse
 from aws_clients import s3_client, sqs_client
 from database import collection
 from config import logger, INBOUND_QUEUE_URL
+from sentry import initialize_sentry
+
+initialize_sentry()
 
 
 def extract_s3_info(record):

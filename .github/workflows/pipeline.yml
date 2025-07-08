@@ -57,4 +57,5 @@ jobs:
               InboundQueueUrl='${{ vars.INBOUND_QUEUE_URL }}' \
               InboundQueueArn='${{ vars.INBOUND_QUEUE_ARN }}' \
               NotificationQueueUrl='${{ vars.NOTIFICATION_QUEUE_URL }}' \
-              NotificationQueueArn='${{ vars.NOTIFICATION_QUEUE_ARN }}'
+              NotificationQueueArn='${{ vars.NOTIFICATION_QUEUE_ARN }}' \
+              SentryDSN='${{ secrets.SENTRY_DSN }}'

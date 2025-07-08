@@ -54,6 +54,10 @@ Parameters:
     Type: String
     Description: Notification Queue ARN
 
+  SentryDSN:
+    Type: String
+    Description: DSN (Data Source Name) for your Sentry project
+
 Resources:
   # SQS
   ProgressUpdatesDeadLetterQueue:
