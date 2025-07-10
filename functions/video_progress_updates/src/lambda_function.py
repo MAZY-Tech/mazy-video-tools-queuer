@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 from aws_clients import sqs_client
-from database import collection
+from database import collection as get_collection
 from config import logger, NOTIFICATION_QUEUE_URL
 from pymongo import ReturnDocument
 from sentry import initialize_sentry
@@ -33,7 +33,8 @@ def extract_update_fields(msg):
 
 def update_database(video_id, update_fields):
     update_fields['last_update'] = datetime.now().isoformat()
-    result = collection.find_one_and_update(
+    db_collection = get_collection()
+    result = db_collection.find_one_and_update(
         {'video_id': video_id},
         {'$set': update_fields},
         return_document=ReturnDocument.AFTER

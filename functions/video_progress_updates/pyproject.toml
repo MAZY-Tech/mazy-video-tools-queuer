@@ -1,0 +1,6 @@
+[project]
+name = "mazy-video-tools-queuer"
+version = "1.0.0"
+
+[tool.setuptools.packages.find]
+where = ["src"]

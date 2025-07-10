@@ -81,7 +81,7 @@ Resources:
     Properties:
       FunctionName: mazy-video-tools-video-s3-handler
       Description: Receive S3 video-upload events and enqueue to InboundQueue
-      CodeUri: functions/video-s3-handler/
+      CodeUri: functions/video_s3_handler/src/
       Handler: lambda_function.lambda_handler
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/LabRole
       VpcConfig:
@@ -121,7 +121,7 @@ Resources:
     Properties:
       FunctionName: mazy-video-tools-video-progress-updates
       Description: Process video progress, success and failure updates from ProgressUpdatesQueue
-      CodeUri: functions/video-progress-updates/
+      CodeUri: functions/video_progress_updates/src/
       Handler: lambda_function.lambda_handler
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/LabRole
       VpcConfig:
