@@ -4,3 +4,6 @@ version = "1.0.0"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "--cov=src --cov-report=term-missing"
