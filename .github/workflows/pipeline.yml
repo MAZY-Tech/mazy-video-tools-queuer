@@ -28,12 +28,14 @@ jobs:
     - name: Run tests for video_progress_updates
       working-directory: ./functions/video_progress_updates
       run: |
+        pip install -r tests/requirements.txt
         pip install -e .
         coverage run --parallel-mode -m pytest
 
     - name: Run tests for video_s3_handler
       working-directory: ./functions/video_s3_handler
       run: |
+        pip install -r tests/requirements.txt
         pip install -e .
         coverage run --parallel-mode -m pytest
 
