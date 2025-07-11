@@ -1,0 +1,6 @@
+boto3
+pymongo[srv]
+sentry-sdk
+pytest
+pytest-mock
+pytest-cov

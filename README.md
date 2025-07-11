@@ -1,5 +1,9 @@
 # MAZY Video Tools Queuer
 
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=MAZY-Tech_mazy-video-tools-queuer&metric=coverage)](https://sonarcloud.io/summary/new_code?id=MAZY-Tech_mazy-video-tools-queuer)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=MAZY-Tech_mazy-video-tools-queuer&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=MAZY-Tech_mazy-video-tools-queuer)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=MAZY-Tech_mazy-video-tools-queuer&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=MAZY-Tech_mazy-video-tools-queuer)
+
 ## Visão Geral
 **Mazy Video Tools Queuer** é uma aplicação serverless que realiza:
 1. Recepção de eventos de upload de vídeo em um bucket S3 existente.
@@ -67,3 +71,17 @@ sam deploy --guided
 ## Licença
 Este projeto está licenciado sob a **Apache License 2.0**.  
 Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+## Participantes
+
+- **Alison Israel - RM358367**  
+  *Discord*: @taykarus | E-mail: taykarus@gmail.com
+
+- **José Matheus de Oliveira - RM358854**  
+  *Discord*: @jsmatheus | E-mail: matheusoliveira.info@gmail.com
+
+- **Victor Zaniquelli - RM358533**  
+  *Discord*: @zaniquelli | E-mail: zaniquelli@outlook.com.br
+
+- **Yan Gianini - RM358368**  
+  *Discord*: @.gianini | E-mail: yangianini@gmail.com

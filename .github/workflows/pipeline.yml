@@ -3,59 +3,108 @@ name: Deploy Python Lambda with AWS SAM
 on:
   push:
     branches:
-      - main
+    - main
   pull_request:
     branches:
-      - main
+    - main
   workflow_dispatch:
 
+
 jobs:
+  test-sonar:
+    name: Run Tests & Sonar
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Run tests for video_progress_updates
+      working-directory: ./functions/video_progress_updates
+      env:
+        AWS_REGION: ${{ vars.AWS_REGION }}
+      run: |
+        pip install -r tests/requirements.txt
+        pip install -e .
+        coverage run --parallel-mode -m pytest
+
+    - name: Run tests for video_s3_handler
+      working-directory: ./functions/video_s3_handler
+      env:
+        AWS_REGION: ${{ vars.AWS_REGION }}
+      run: |
+        pip install -r tests/requirements.txt
+        pip install -e .
+        coverage run --parallel-mode -m pytest
+
+    - name: Combine coverage reports and generate XML
+      working-directory: ./functions
+      run: |
+        coverage combine video_progress_updates/.coverage video_s3_handler/.coverage
+        coverage xml -o ../coverage.xml
+
+    - name: SonarQube Scan
+      uses: SonarSource/sonarqube-scan-action@v5
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      with:
+        args: >
+          -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }} -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }} -Dsonar.sources=functions/video_progress_updates/src,functions/video_s3_handler/src -Dsonar.python.version=3.12 -Dsonar.python.coverage.reportPaths=coverage.xml -Dsonar.exclusions=**/tests/**,**/__init__.py
+
   build-and-deploy:
     name: Build and Deploy SAM Application
     runs-on: ubuntu-latest
+    needs: test-sonar
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
 
-      - name: Set up AWS SAM CLI
-        uses: aws-actions/setup-sam@v2
+    - name: Set up AWS SAM CLI
+      uses: aws-actions/setup-sam@v2
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: ${{ vars.AWS_REGION }}
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+        aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Build SAM Application
-        run: sam build --use-container
+    - name: Build SAM Application
+      run: sam build --use-container
 
-      - name: Deploy SAM Application
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-        run: |
-          sam deploy \
-            --stack-name ${{ vars.SAM_STACK_NAME }} \
-            --s3-prefix ${{ vars.SAM_S3_PREFIX }} \
-            --region ${{ vars.AWS_REGION }} \
-            --capabilities CAPABILITY_IAM \
-            --no-confirm-changeset \
-            --resolve-s3 \
-            --parameter-overrides \
-              VpcSubnets='${{ vars.VPC_SUBNETS }}' \
-              VpcSecurityGroups='${{ vars.VPC_SECURITY_GROUPS }}' \
-              S3Bucket='${{ vars.S3_BUCKET }}' \
-              DatabaseHost='${{ vars.DATABASE_HOST }}' \
-              DatabaseUser='${{ vars.DATABASE_USER }}' \
-              DatabasePassword='${{ secrets.DATABASE_PASSWORD }}' \
-              DatabaseName='${{ vars.DATABASE_NAME }}' \
-              InboundQueueUrl='${{ vars.INBOUND_QUEUE_URL }}' \
-              InboundQueueArn='${{ vars.INBOUND_QUEUE_ARN }}' \
-              NotificationQueueUrl='${{ vars.NOTIFICATION_QUEUE_URL }}' \
-              NotificationQueueArn='${{ vars.NOTIFICATION_QUEUE_ARN }}' \
-              SentryDSN='${{ secrets.SENTRY_DSN }}'
+    - name: Deploy SAM Application
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+      run: |
+        sam deploy \
+          --stack-name ${{ vars.SAM_STACK_NAME }} \
+          --s3-prefix ${{ vars.SAM_S3_PREFIX }} \
+          --region ${{ vars.AWS_REGION }} \
+          --capabilities CAPABILITY_IAM \
+          --no-confirm-changeset \
+          --resolve-s3 \
+          --parameter-overrides \
+            VpcSubnets='${{ vars.VPC_SUBNETS }}' \
+            VpcSecurityGroups='${{ vars.VPC_SECURITY_GROUPS }}' \
+            S3Bucket='${{ vars.S3_BUCKET }}' \
+            DatabaseHost='${{ vars.DATABASE_HOST }}' \
+            DatabaseUser='${{ vars.DATABASE_USER }}' \
+            DatabasePassword='${{ secrets.DATABASE_PASSWORD }}' \
+            DatabaseName='${{ vars.DATABASE_NAME }}' \
+            InboundQueueUrl='${{ vars.INBOUND_QUEUE_URL }}' \
+            InboundQueueArn='${{ vars.INBOUND_QUEUE_ARN }}' \
+            NotificationQueueUrl='${{ vars.NOTIFICATION_QUEUE_URL }}' \
+            NotificationQueueArn='${{ vars.NOTIFICATION_QUEUE_ARN }}' \
+            SentryDSN='${{ secrets.SENTRY_DSN }}'
