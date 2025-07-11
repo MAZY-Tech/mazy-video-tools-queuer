@@ -27,6 +27,8 @@ jobs:
 
     - name: Run tests for video_progress_updates
       working-directory: ./functions/video_progress_updates
+      env:
+        AWS_REGION: ${{ vars.AWS_REGION }}
       run: |
         pip install -r tests/requirements.txt
         pip install -e .
@@ -34,6 +36,8 @@ jobs:
 
     - name: Run tests for video_s3_handler
       working-directory: ./functions/video_s3_handler
+      env:
+        AWS_REGION: ${{ vars.AWS_REGION }}
       run: |
         pip install -r tests/requirements.txt
         pip install -e .
